@@ -5,7 +5,7 @@ This project captures network flows using an eBPF XDP program and saves them to 
 ## Requirements
 - Ubuntu (with kernel >= 4.8)
 - Python 3
-- bcc (`python3-bcc`)
+- bcc (`python3-bpfcc`)
 - Linux kernel headers (`linux-headers-$(uname -r)`)
 
 ## Setup
@@ -13,7 +13,7 @@ This project captures network flows using an eBPF XDP program and saves them to 
 1. **Install dependencies:**
    ```sh
    sudo apt update
-   sudo apt install -y python3-bcc linux-headers-$(uname -r)
+   sudo apt install -y python3-bpfcc linux-headers-$(uname -r)
    ```
 
 2. **Clone or copy this repository.**
