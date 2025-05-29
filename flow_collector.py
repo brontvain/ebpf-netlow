@@ -23,29 +23,44 @@ def ip_to_str(ip):
 def send_netflow_v5(flows, seq, uptime, collector, port):
     # NetFlow v5 header: 24 bytes
     # NetFlow v5 record: 48 bytes
-    version = 5
-    count = len(flows)
-    sys_uptime = uptime
-    unix_secs = int(time.time())
-    unix_nsecs = int((time.time() % 1) * 1e9)
-    flow_sequence = seq
-    engine_type = 0
-    engine_id = 0
-    sampling = 0
-    header = struct.pack('!HHIIIIBBBxxxHH',
-        version, count, sys_uptime, unix_secs, unix_nsecs, flow_sequence,
-        engine_type, engine_id, sampling, 0, 0)
-    records = b''
-    for k, v in flows.items():
-        # srcaddr, dstaddr, nexthop, input, output, dPkts, dOctets, first, last, srcport, dstport, pad1, tcp_flags, prot, tos, src_as, dst_as, src_mask, dst_mask, pad2
-        records += struct.pack('!IIIHHIIIIHHxBBBHHBBH',
-            k.src_ip, k.dst_ip, 0, 0, 0, v.value, 0, 0, 0,
-            socket.ntohs(k.src_port), socket.ntohs(k.dst_port),
-            0, 0, k.proto, 0, 0, 0, 0, 0, 0)
-    packet = header + records
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.sendto(packet, (collector, port))
-    sock.close()
+    MAX_RECORDS_PER_PACKET = 30  # Maximum number of flow records per packet
+    
+    # Convert flows dictionary to list for batch processing
+    flow_items = list(flows.items())
+    
+    # Process flows in batches
+    for i in range(0, len(flow_items), MAX_RECORDS_PER_PACKET):
+        batch = flow_items[i:i + MAX_RECORDS_PER_PACKET]
+        version = 5
+        count = len(batch)
+        sys_uptime = uptime
+        unix_secs = int(time.time())
+        unix_nsecs = int((time.time() % 1) * 1e9)
+        flow_sequence = seq + i
+        engine_type = 0
+        engine_id = 0
+        sampling = 0
+        
+        header = struct.pack('!HHIIIIBBBxxxHH',
+            version, count, sys_uptime, unix_secs, unix_nsecs, flow_sequence,
+            engine_type, engine_id, sampling, 0, 0)
+        
+        records = b''
+        for k, v in batch:
+            # srcaddr, dstaddr, nexthop, input, output, dPkts, dOctets, first, last, srcport, dstport, tcp_flags, prot, tos, src_as, dst_as, src_mask, dst_mask, pad
+            records += struct.pack('!IIIHH IIII HHBBBBHHBB',
+                k.src_ip, k.dst_ip, 0, 0, 0,  # srcaddr, dstaddr, nexthop, input, output
+                v.value, 0, uptime, uptime,  # dPkts, dOctets, first, last
+                socket.ntohs(k.src_port), socket.ntohs(k.dst_port),  # srcport, dstport
+                0, k.proto, 0,  # tcp_flags, prot, tos
+                0, 0, 0, 0, 0)  # src_as, dst_as, src_mask, dst_mask, pad
+        
+        packet = header + records
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            sock.sendto(packet, (collector, port))
+        finally:
+            sock.close()
 
 # Set up rotating logger
 logger = logging.getLogger("FlowLogger")

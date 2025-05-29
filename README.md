@@ -20,7 +20,7 @@ This project captures network flows using an eBPF XDP program and saves them to 
 
 3. **Run the collector (as root):**
    ```sh
-   sudo INTERFACE=ens33 OUTPUT_FILE=/var/log/flows.txt LOG_MAX_BYTES=1048576 LOG_BACKUP_COUNT=10 NETFLOW_COLLECTOR=192.168.1.100 NETFLOW_PORT=2055 python3 flow_collector.py
+   sudo INTERFACE=wlo1 OUTPUT_FILE=/var/log/flows.txt LOG_MAX_BYTES=1048576 LOG_BACKUP_COUNT=10 NETFLOW_COLLECTOR=192.168.1.100 NETFLOW_PORT=2056 python3 flow_collector.py
    ```
    - `LOG_MAX_BYTES`: Maximum size in bytes before rotating the log (default: 5MB)
    - `LOG_BACKUP_COUNT`: Number of rotated log files to keep (default: 5)
